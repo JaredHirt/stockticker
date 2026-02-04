@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta property="og:image" content="https://jared.hirt.ca/stockticker/icon-512.png"> 
+    <meta property="og:url" content="https://jared.hirt.ca/stockticker/">
+    <meta name="twitter:image" content="https://jared.hirt.ca/stockticker/icon-512.png">
+    <title>Stock Ticker Live</title>
+    <link rel="manifest" href="manifest.json">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div id="error-console" onclick="this.style.display='none'"></div>
+
+    <button id="settings-btn" class="top-btn" onclick="openSettings()">🎨</button>
+    <button id="help-btn" class="top-btn" onclick="openHelp()">❓</button>
+    <button id="theme-toggle" class="top-btn" onclick="toggleDarkMode()">☀</button>
+
+    <h1 id="app-title">Stock Ticker</h1>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeSettings()">×</button>
+            <h2 style="margin-top:0; border:none; color:var(--text);">Visual Style</h2>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:5px;">Select a theme. Each theme has a Light and Dark mode.</p>
+            <div class="theme-grid" id="theme-options"></div>
+            <button onclick="closeSettings()" style="background:var(--text); color:var(--bg); width:100%;">Close</button>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeHelp()">×</button>
+            <h2 style="margin-top:0; border:none; color:var(--green); text-align: center;">How To Play</h2>
+            <ul class="rules-list">
+                <li>💰 <strong>Goal:</strong> Grow your Net Worth. You start with $5,000.</li>
+                <li>⏰ <strong>Market:</strong> Prices update once per hour from 8:00am - 8:00pm PST.</li>
+                <li>💸 <strong>Dividends:</strong> Stocks priced at or above <strong>$1.00</strong> pay dividends. Cheap stocks pay nothing!</li>
+                <li>📉 <strong>The Crash:</strong> If a stock hits $0, it crashes. You lose your investment.</li>
+                <li>📈 <strong>The Split:</strong> If a stock hits $2.00, it splits. You get 2x shares, price resets to $1.00.</li>
+                <li>💀 <strong>Bankruptcy:</strong> Lost it all? You can declare bankruptcy to reset to $2,000 (72h cooldown).</li>
+            </ul>
+            <button onclick="closeHelp()" style="background:var(--green); color:white; width:100%; font-size: 1.1rem;">Let's Trade</button>
+        </div>
+    </div>
+
+    <div id="graph-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="close-modal" onclick="closeGraph()">×</button>
+            <h3 id="graph-title" style="margin-top:0; border:none;">Stock History</h3>
+            <div id="chart-container" style="min-height:300px;">Loading...</div>
+        </div>
+    </div>
+
+    <div id="auth-section">
+        <div id="login-view">
+            <p style="margin-bottom:10px; color:var(--text-muted);">Sign in to trade and save progress.</p>
+            <button id="login-btn" class="btn-login">Sign In with Google</button>
+        </div>
+
+        <div id="profile-view" style="display:none;">
+            <div style="color:var(--text-muted); font-size:0.8rem; letter-spacing: 1px;">NET WORTH</div>
+            <div class="cash-display" id="user-cash">$0</div>
+            
+            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+                Playing as: <strong id="user-name" style="color:var(--text)">Player</strong>
+                <button class="btn-edit" onclick="changeName()" style="background:none; border:none;">✏️</button>
+            </div>
+
+            <button id="bankruptcy-btn" class="btn-bankrupt" style="display:none; background:#333; color:#ff5252; border:1px solid #ff5252; width:100%; margin-bottom:10px;" onclick="declareBankruptcy()">
+                💀 DECLARE BANKRUPTCY
+            </button>
+
+            <div>
+                <button id="logout-btn" class="btn-logout">Sign Out</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="dashboard-card">
+            <canvas id="marketChart" height="200"></canvas>
+        </div>
+        <div class="dashboard-card">
+            <h3 style="margin-top:5px;">Market Feed</h3>
+            <ul id="activity-list" style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                <li style="text-align:center; padding:10px;">Waiting for market open...</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="grid" id="market-grid"></div>
+
+    <div id="leaderboard-section">
+        <h2 style="text-align:center; margin-top:40px;">Global Rankings</h2>
+        <div id="lb-buttons" style="display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:15px;"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%">#</th>
+                    <th>Player</th>
+                    <th id="lb-score-header" style="text-align:right;">Score</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <tr><td colspan="3" style="text-align:center; padding:20px;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module" src="game.js"></script>
+</body>
+</html>
