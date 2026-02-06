@@ -86,6 +86,25 @@ const THEMES = {
             light: { '--bg': '#f0f5ff', '--card': '#ffffff', '--text': '#1a1a2e', '--border': '#cddeff', '--input-bg': '#f8faff', '--font-main': "sans-serif", '--accent': '#e94560', '--chart-grid': '#e0eaff' }
         },
         map: { 'Gold': {n:'Bitcoin', e:'₿'}, 'Silver': {n:'Ethereum', e:'Ξ'}, 'Oil': {n:'Solana', e:'◎'}, 'Bonds': {n:'USDC', e:'💲'}, 'Industrial': {n:'Doge', e:'🐕'}, 'Grain': {n:'Pepe', e:'🐸'} }
+    },
+    'ranch': {
+        name: 'Venator Ranches',
+        desc: 'Manage your livestock.',
+        css: {
+            // Dark Mode: Dark Wood & Barn Style
+            dark: { '--bg': '#3e2723', '--card': '#4e342e', '--text': '#d7ccc8', '--border': '#8d6e63', '--input-bg': '#5d4037', '--font-main': "'Georgia', serif", '--accent': '#ffb74d', '--chart-grid': '#5d4037' },
+            // Light Mode: Parchment & Leather Style
+            light: { '--bg': '#efebe9', '--card': '#ffffff', '--text': '#3e2723', '--border': '#bcaaa4', '--input-bg': '#f5f5f5', '--font-main': "'Georgia', serif", '--accent': '#795548', '--chart-grid': '#d7ccc8' }
+        },
+        // The Livestock Mapping
+        map: { 
+            'Gold': {n:'Cows', e:'🐄'}, 
+            'Silver': {n:'Bison', e:'🦬'}, 
+            'Oil': {n:'Pigs', e:'🐖'}, 
+            'Bonds': {n:'Sheep', e:'🐑'}, 
+            'Industrial': {n:'Chickens', e:'🐓'}, 
+            'Grain': {n:'Bunnies', e:'🐇'} 
+        }
     }
 };
 
@@ -99,10 +118,22 @@ function applyVisuals() {
     const root = document.documentElement;
     const palette = t.css[mode];
     
+    // 1. Apply Colors
     Object.keys(palette).forEach(prop => {
         root.style.setProperty(prop, palette[prop]);
     });
 
+    // 2. Update Text (Stock Ticker -> Venator Ranches)
+    const titleEl = document.getElementById('app-title');
+    if (currentThemeKey === 'ranch') {
+        titleEl.innerText = "Venator Ranches";
+        document.title = "Venator Ranches Live";
+    } else {
+        titleEl.innerText = "Stock Ticker";
+        document.title = "Stock Ticker Live";
+    }
+
+    // 3. Save & Refresh UI
     document.getElementById('theme-toggle').innerText = isDarkMode ? '🌙' : '☀';
     localStorage.setItem('market_theme', currentThemeKey);
     localStorage.setItem('theme_mode', isDarkMode ? 'dark' : 'light');
