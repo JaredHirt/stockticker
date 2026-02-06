@@ -105,6 +105,23 @@ const THEMES = {
             'Industrial': {n:'Chickens', e:'🐓'}, 
             'Grain': {n:'Bunnies', e:'🐇'} 
         }
+    },
+    'countries': {
+        name: 'Sovereign Debt',
+        desc: "It's all bonds???",
+        css: {
+            // Sleek Blue (Crypto-style)
+            dark: { '--bg': '#1a1a2e', '--card': '#16213e', '--text': '#e94560', '--border': '#0f3460', '--input-bg': '#0f3460', '--font-main': "sans-serif", '--accent': '#4caf50', '--chart-grid': '#2a2a4e' },
+            light: { '--bg': '#f0f5ff', '--card': '#ffffff', '--text': '#1a1a2e', '--border': '#cddeff', '--input-bg': '#f8faff', '--font-main': "sans-serif", '--accent': '#e94560', '--chart-grid': '#e0eaff' }
+        },
+        map: { 
+            'Gold': {n:'Israel', e:'🇮🇱'}, 
+            'Silver': {n:'Russia', e:'🇷🇺'}, 
+            'Oil': {n:'Venezuela', e:'🇻🇪'}, 
+            'Bonds': {n:'USA', e:'🇺🇸'}, 
+            'Industrial': {n:'China', e:'🇨🇳'}, 
+            'Grain': {n:'North Korea', e:'🇰🇵'} 
+        }
     }
 };
 
