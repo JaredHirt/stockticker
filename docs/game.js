@@ -30,16 +30,22 @@ let currentUser = null;
 let marketPrices = {};
 let userPortfolio = { cash: 0, stocks: {} }; 
 let myChart = null;
-let chartInstance = null; // For ApexCharts
+let chartInstance = null;
 let lastChartData = []; 
 let isDataLoaded = false; 
 let cachedLeaderboardData = null; 
 let lastFetchTime = 0; 
-let historyCache = null; // <--- NEW: Stores graph data
-let lastHistoryFetch = 0; // <--- NEW: Timestamp of last graph fetch
+let historyCache = null; 
+let lastHistoryFetch = 0; 
 
 // --- 3. THEME ENGINE ---
 const stocks = ['Gold', 'Silver', 'Oil', 'Bonds', 'Industrial', 'Grain'];
+
+function isAprilFools() {
+    const today = new Date();
+    // getMonth() is 0-indexed, so 3 is April. getDate() is 1-indexed.
+    return today.getMonth() === 3 && today.getDate() === 1; 
+}
 
 const THEMES = {
     'classic': {
@@ -91,37 +97,29 @@ const THEMES = {
         name: 'Venator Ranches',
         desc: 'Manage your livestock.',
         css: {
-            // Dark Mode: Dark Wood & Barn Style
             dark: { '--bg': '#3e2723', '--card': '#4e342e', '--text': '#d7ccc8', '--border': '#8d6e63', '--input-bg': '#5d4037', '--font-main': "'Georgia', serif", '--accent': '#ffb74d', '--chart-grid': '#5d4037' },
-            // Light Mode: Parchment & Leather Style
             light: { '--bg': '#efebe9', '--card': '#ffffff', '--text': '#3e2723', '--border': '#bcaaa4', '--input-bg': '#f5f5f5', '--font-main': "'Georgia', serif", '--accent': '#795548', '--chart-grid': '#d7ccc8' }
         },
-        // The Livestock Mapping
-        map: { 
-            'Gold': {n:'Cows', e:'🐄'}, 
-            'Silver': {n:'Bison', e:'🦬'}, 
-            'Oil': {n:'Pigs', e:'🐖'}, 
-            'Bonds': {n:'Sheep', e:'🐑'}, 
-            'Industrial': {n:'Chickens', e:'🐓'}, 
-            'Grain': {n:'Bunnies', e:'🐇'} 
-        }
+        map: { 'Gold': {n:'Cows', e:'🐄'}, 'Silver': {n:'Bison', e:'🦬'}, 'Oil': {n:'Pigs', e:'🐖'}, 'Bonds': {n:'Sheep', e:'🐑'}, 'Industrial': {n:'Chickens', e:'🐓'}, 'Grain': {n:'Bunnies', e:'🐇'} }
     },
     'countries': {
         name: 'Sovereign Debt',
         desc: "It's all bonds???",
         css: {
-            // Sleek Blue (Crypto-style)
             dark: { '--bg': '#1a1a2e', '--card': '#16213e', '--text': '#e94560', '--border': '#0f3460', '--input-bg': '#0f3460', '--font-main': "sans-serif", '--accent': '#4caf50', '--chart-grid': '#2a2a4e' },
             light: { '--bg': '#f0f5ff', '--card': '#ffffff', '--text': '#1a1a2e', '--border': '#cddeff', '--input-bg': '#f8faff', '--font-main': "sans-serif", '--accent': '#e94560', '--chart-grid': '#e0eaff' }
         },
-        map: { 
-            'Gold': {n:'Israel', e:'🇮🇱'}, 
-            'Silver': {n:'Russia', e:'🇷🇺'}, 
-            'Oil': {n:'Venezuela', e:'🇻🇪'}, 
-            'Bonds': {n:'USA', e:'🇺🇸'}, 
-            'Industrial': {n:'China', e:'🇨🇳'}, 
-            'Grain': {n:'North Korea', e:'🇰🇵'} 
-        }
+        map: { 'Gold': {n:'Israel', e:'🇮🇱'}, 'Silver': {n:'Russia', e:'🇷🇺'}, 'Oil': {n:'Venezuela', e:'🇻🇪'}, 'Bonds': {n:'USA', e:'🇺🇸'}, 'Industrial': {n:'China', e:'🇨🇳'}, 'Grain': {n:'North Korea', e:'🇰🇵'} }
+    },
+    'prank': {
+        name: 'Sex Sells',
+        desc: 'Love you Ethan!',
+        hidden: true, // This hides it from the settings menu
+        css: {
+            dark: { '--bg': '#ff00ff', '--card': '#00ffff', '--text': '#000000', '--border': '#ffff00', '--input-bg': '#ffffff', '--font-main': "'Comic Sans MS', 'Chalkboard SE', sans-serif", '--accent': '#ff0000', '--chart-grid': '#000000' },
+            light: { '--bg': '#ffff00', '--card': '#ff00ff', '--text': '#000000', '--border': '#00ffff', '--input-bg': '#ffffff', '--font-main': "'Comic Sans MS', 'Chalkboard SE', sans-serif", '--accent': '#ff0000', '--chart-grid': '#000000' }
+        },
+        map: { 'Gold': {n:'Dildos', e:'🍆'}, 'Silver': {n:'Foreskin', e:'😋'}, 'Oil': {n:'Status Card', e:'🪶'}, 'Bonds': {n:'Lubricant', e:'🧴'}, 'Industrial': {n:'Viagra', e:'💊'}, 'Grain': {n:'67', e:'6️⃣7️⃣'} }
     }
 };
 
@@ -140,11 +138,17 @@ function applyVisuals() {
         root.style.setProperty(prop, palette[prop]);
     });
 
-    // 2. Update Text (Stock Ticker -> Venator Ranches)
+    // 2. Update Text based on Theme
     const titleEl = document.getElementById('app-title');
     if (currentThemeKey === 'ranch') {
         titleEl.innerText = "Venator Ranches";
         document.title = "Venator Ranches Live";
+    } else if (currentThemeKey === 'countries') {
+        titleEl.innerText = "Sovereign Debt";
+        document.title = "Sovereign Debt Live";
+    } else if (currentThemeKey === 'prank') {
+        titleEl.innerText = "STONKS ONLY GO UP";
+        document.title = "STONKS";
     } else {
         titleEl.innerText = "Stock Ticker";
         document.title = "Stock Ticker Live";
@@ -152,7 +156,11 @@ function applyVisuals() {
 
     // 3. Save & Refresh UI
     document.getElementById('theme-toggle').innerText = isDarkMode ? '🌙' : '☀';
-    localStorage.setItem('market_theme', currentThemeKey);
+    
+    // Don't save the prank theme to local storage, so it doesn't break their game tomorrow
+    if (currentThemeKey !== 'prank') {
+        localStorage.setItem('market_theme', currentThemeKey);
+    }
     localStorage.setItem('theme_mode', isDarkMode ? 'dark' : 'light');
 
     if(lastChartData && lastChartData.length > 0) updateChart(lastChartData);
@@ -164,18 +172,16 @@ function getDisplayInfo(dbName) {
     return THEMES[currentThemeKey].map[dbName] || {n: dbName, e: ''};
 }
 
-// --- 4. GLOBAL UI FUNCTIONS (ATTACHED TO WINDOW) ---
+// --- 4. GLOBAL UI FUNCTIONS ---
 window.openSettings = () => document.getElementById('settings-modal').style.display = 'flex';
 window.closeSettings = () => document.getElementById('settings-modal').style.display = 'none';
 
-// HELP MODAL LOGIC
 window.openHelp = () => document.getElementById('help-modal').style.display = 'flex';
 window.closeHelp = () => {
     document.getElementById('help-modal').style.display = 'none';
     localStorage.setItem('hasSeenTutorial', 'true');
 };
 
-// GRAPH MODAL LOGIC (FIXED)
 window.openGraph = async (stockName) => {
     const modal = document.getElementById('graph-modal');
     modal.style.display = "flex";
@@ -184,7 +190,6 @@ window.openGraph = async (stockName) => {
 
     try {
         const now = Date.now();
-        // --- CACHING FIX: Only fetch if empty or > 1 hour old ---
         if (!historyCache || (now - lastHistoryFetch > 60 * 60 * 1000)) {
             const docRef = doc(db, "game_state", "market_history");
             const snap = await getDoc(docRef);
@@ -203,7 +208,6 @@ window.openGraph = async (stockName) => {
         }
 
         const seriesData = historyCache.map(point => [point.ts, point.prices[stockName]]);
-
         document.getElementById('chart-container').innerHTML = ""; 
         
         const options = {
@@ -213,7 +217,6 @@ window.openGraph = async (stockName) => {
                 height: 300, 
                 toolbar: { show: false }, 
                 background: 'transparent',
-                // --- GRAPH FIX: DISABLE ZOOM/SELECTION ---
                 zoom: { enabled: false },
                 selection: { enabled: false },
                 events: {
@@ -225,8 +228,6 @@ window.openGraph = async (stockName) => {
             fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.1, stops: [0, 100] } },
             dataLabels: { enabled: false },
             xaxis: { type: 'datetime', tooltip: { enabled: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-            
-            // --- Y-AXIS LOCK ---
             yaxis: { 
                 min: 0, 
                 max: 200,
@@ -264,10 +265,12 @@ window.toggleDarkMode = () => {
     applyVisuals();
 };
 
-// GENERATE THEME BUTTONS
+// GENERATE THEME BUTTONS (Skipping hidden ones)
 const themeContainer = document.getElementById('theme-options');
 Object.keys(THEMES).forEach(key => {
     const t = THEMES[key];
+    if (t.hidden) return; // Skip the prank theme!
+
     const btn = document.createElement('button');
     btn.className = 'btn-theme';
     if(key === currentThemeKey) btn.style.border = '2px solid var(--accent)';
@@ -357,7 +360,6 @@ async function handleTrade(stock, type, quantity) {
     } catch (e) { alert(e); }
 }
 
-// EXPORT TO WINDOW (So HTML can see them)
 window.trade = (stock, type) => {
     const qtyInput = document.getElementById(`qty-${stock}`);
     const qty = parseInt(qtyInput.value);
@@ -458,7 +460,6 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('profile-view').style.display = 'block';
         document.getElementById('user-name').innerText = user.displayName || "Player";
         
-        // CHECK FOR FIRST TIME USER
         if (!localStorage.getItem('hasSeenTutorial')) {
             setTimeout(() => window.openHelp(), 1500);
         }
@@ -485,6 +486,22 @@ onAuthStateChanged(auth, async (user) => {
                 const data = docSnap.data();
                 userPortfolio = data; 
                 isDataLoaded = true; 
+
+                // 🤡 APRIL FOOLS TRAP 🤡
+                const settingsBtn = document.getElementById('settings-btn');
+                if (data.prank === true && isAprilFools()) {
+                    if (currentThemeKey !== 'prank') {
+                        currentThemeKey = 'prank';
+                        applyVisuals();
+                        // Hide the settings button so they can't escape
+                        if(settingsBtn) settingsBtn.style.display = 'none';
+                    }
+                } else if (currentThemeKey === 'prank') {
+                    // Revert to normal if it's no longer April 1st or if you remove the flag
+                    currentThemeKey = localStorage.getItem('market_theme') || 'classic';
+                    applyVisuals();
+                    if(settingsBtn) settingsBtn.style.display = 'block';
+                }
 
                 document.getElementById('user-cash').innerText = "$" + Math.floor(data.cash).toLocaleString();
                 if(data.name) document.getElementById('user-name').innerText = data.name;
@@ -529,7 +546,6 @@ onAuthStateChanged(auth, async (user) => {
 
 document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
 document.getElementById('logout-btn').onclick = () => signOut(auth);
-
 
 async function fetchLeaderboard(criteria) {
     document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
